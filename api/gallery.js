@@ -29,14 +29,17 @@ export default async function handler(req, res) {
       type: 'upload',
       prefix: 'screenshots', // Your folder
       max_results: 500, // Adjust if >500 images
-      direction: 'desc', // Newest first
-      fields: 'public_id,created_at,secure_url' // Only needed fields
+      direction: -1, // -1 for descending order (newest first)
+    });
+
+    // Sort by created_at timestamp to ensure proper ordering
+    const resources = (result.resources || []).sort((a, b) => {
+      return new Date(b.created_at) - new Date(a.created_at);
     });
 
     // Pagination logic
     const page = parseInt(req.query.page, 10) || 1;
-    const pageSize = 10;
-    const resources = result.resources || [];
+    const pageSize = parseInt(req.query.pageSize, 10) || 10;
     const totalImages = resources.length;
     const startIdx = (page - 1) * pageSize;
     const endIdx = startIdx + pageSize;
