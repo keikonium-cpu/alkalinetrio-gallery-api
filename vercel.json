@@ -1,5 +1,17 @@
 {
   "functions": {
-    "api/gallery.js": { "maxDuration": 10 }
-  }
+    "api/gallery.js": { "maxDuration": 10 },
+    "api/scrape-ebay.js": { "maxDuration": 10 },
+    "api/listings.js": { "maxDuration": 10 }
+  },
+  "crons": [
+    {
+      "path": "/api/capture",
+      "schedule": "0 6,18 * * *"
+    },
+    {
+      "path": "/api/scrape-ebay",
+      "schedule": "0 0 */2 * *"
+    }
+  ]
 }
