@@ -33,14 +33,25 @@ export default async function handler(req, res) {
       fields: 'public_id,created_at,secure_url' // Only needed fields
     });
 
-    // Extract image data (limit to last 10 if too many)
-    const images = result.resources.slice(0, 10).map(img => ({
+    // Pagination logic
+    const page = parseInt(req.query.page, 10) || 1;
+    const pageSize = 10;
+    const resources = result.resources || [];
+    const totalImages = resources.length;
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const images = resources.slice(startIdx, endIdx).map(img => ({
       url: img.secure_url,
       timestamp: img.created_at,
       publicId: img.public_id
     }));
 
-    res.status(200).json({ images });
+    res.status(200).json({
+      images,
+      total: totalImages,
+      page,
+      pageSize
+    });
   } catch (error) {
     console.error('Gallery API error:', error);
     res.status(500).json({ error: 'Failed to fetch images' });
