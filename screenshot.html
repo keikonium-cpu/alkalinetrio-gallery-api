@@ -141,10 +141,9 @@
       <p>Total Images: <span id="total-images">0</span></p>
     </div>
     <div class="gallery-container">
-      <button class="arrow left-arrow hidden">&lt;</button>
       <div id="gallery" class="gallery">Loading...</div>
-      <button class="arrow right-arrow">&gt;</button>
     </div>
+    <div id="pagination" style="margin: 20px 0; text-align: center;"></div>
   </div>
   <div id="lightbox" onclick="closeLightbox()">
     <img id="lightbox-img" src="" alt="Full-size screenshot">
@@ -156,8 +155,7 @@
     let totalImages = 0;
     let pageSize = 10;
     const gallery = document.getElementById('gallery');
-    const leftArrow = document.querySelector('.left-arrow');
-    const rightArrow = document.querySelector('.right-arrow');
+    const pagination = document.getElementById('pagination');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     const totalImagesSpan = document.getElementById('total-images');
@@ -181,7 +179,7 @@
         } else {
           gallery.innerHTML = '<p>No images found. Check back later!</p>';
         }
-        updatePaginationControls();
+        updatePaginationLinks();
       } catch (error) {
         console.error('Gallery fetch error:', error);
         gallery.innerHTML = `<p>Error loading images: ${error.message}. Please refresh or check console.</p>`;
@@ -197,31 +195,18 @@
       `).join('');
     }
 
-    function updatePaginationControls() {
-      leftArrow.classList.toggle('hidden', currentPage === 1);
-      rightArrow.classList.toggle('hidden', currentPage >= Math.ceil(totalImages / pageSize));
-      // Add page number display
-      let pageDisplay = document.getElementById('page-display');
-      if (!pageDisplay) {
-        pageDisplay = document.createElement('div');
-        pageDisplay.id = 'page-display';
-        pageDisplay.style.margin = '10px 0';
-        pageDisplay.style.fontSize = '1.1em';
-        gallery.parentNode.insertBefore(pageDisplay, gallery.nextSibling);
+    function updatePaginationLinks() {
+      const totalPages = Math.max(1, Math.ceil(totalImages / pageSize));
+      let links = '';
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+          links += `<span style="font-weight:bold;color:#a00;margin:0 6px;">[${i}]</span>`;
+        } else {
+          links += `<a href="#" style="color:#fff;margin:0 6px;text-decoration:none;" onclick="loadGallery(${i});return false;">[${i}]</a>`;
+        }
       }
-      pageDisplay.textContent = `Page ${currentPage} of ${Math.max(1, Math.ceil(totalImages / pageSize))}`;
+      pagination.innerHTML = links;
     }
-
-    leftArrow.addEventListener('click', () => {
-      if (currentPage > 1) {
-        loadGallery(currentPage - 1);
-      }
-    });
-    rightArrow.addEventListener('click', () => {
-      if (currentPage < Math.ceil(totalImages / pageSize)) {
-        loadGallery(currentPage + 1);
-      }
-    });
 
     function openLightbox(src) {
       lightboxImg.src = src;
@@ -255,6 +240,7 @@
       update();
     }
 
+    window.loadGallery = loadGallery; // Expose for inline onclick
     loadGallery();
   </script>
 </body>
