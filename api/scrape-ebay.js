@@ -21,39 +21,60 @@ export default async function handler(req, res) {
   try {
     console.log('Starting eBay scrape...');
     
-    // Fetch sold Alkaline Trio listings from eBay Finding API
+    // Use eBay Finding API (older but still works)
     const ebayAppId = process.env.EBAY_APP_ID;
-    const searchUrl = new URL('https://svcs.ebay.com/services/search/FindingService/v1');
     
-    searchUrl.searchParams.append('OPERATION-NAME', 'findCompletedItems');
-    searchUrl.searchParams.append('SERVICE-VERSION', '1.0.0');
-    searchUrl.searchParams.append('SECURITY-APPNAME', ebayAppId);
-    searchUrl.searchParams.append('RESPONSE-DATA-FORMAT', 'JSON');
-    searchUrl.searchParams.append('REST-PAYLOAD', '');
-    searchUrl.searchParams.append('keywords', 'alkaline trio');
-    searchUrl.searchParams.append('paginationInput.entriesPerPage', '100');
-    searchUrl.searchParams.append('itemFilter(0).name', 'SoldItemsOnly');
-    searchUrl.searchParams.append('itemFilter(0).value', 'true');
-    searchUrl.searchParams.append('sortOrder', 'EndTimeSoonest');
+    // Build the Finding API URL
+    const params = new URLSearchParams({
+      'OPERATION-NAME': 'findCompletedItems',
+      'SERVICE-VERSION': '1.0.0',
+      'SECURITY-APPNAME': ebayAppId,
+      'RESPONSE-DATA-FORMAT': 'JSON',
+      'keywords': 'alkaline trio',
+      'paginationInput.entriesPerPage': '100',
+      'paginationInput.pageNumber': '1',
+      'itemFilter(0).name': 'SoldItemsOnly',
+      'itemFilter(0).value': 'true',
+      'sortOrder': 'EndTimeSoonest'
+    });
 
-    const response = await fetch(searchUrl.toString());
+    const apiUrl = `https://svcs.ebay.com/services/search/FindingService/v1?${params.toString()}`;
+    
+    console.log('Calling eBay API...');
+    const response = await fetch(apiUrl);
     
     const responseText = await response.text();
     console.log('eBay API Response Status:', response.status);
-    console.log('eBay API Response:', responseText);
     
     if (!response.ok) {
+      console.error('eBay Error Response:', responseText.substring(0, 500));
       throw new Error(`eBay API returned ${response.status}: ${responseText.substring(0, 200)}`);
     }
 
-    const data = JSON.parse(responseText);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse eBay response:', responseText.substring(0, 500));
+      throw new Error('Invalid JSON response from eBay');
+    }
+
+    console.log('eBay Response ACK:', data.findCompletedItemsResponse?.[0]?.ack?.[0]);
+    
     const searchResult = data.findCompletedItemsResponse?.[0];
     
     if (!searchResult || searchResult.ack?.[0] !== 'Success') {
-      throw new Error('eBay API request failed');
+      const errorMsg = searchResult?.errorMessage?.[0]?.error?.[0]?.message?.[0] || 'Unknown error';
+      console.error('eBay API Error:', errorMsg);
+      throw new Error(`eBay API error: ${errorMsg}`);
     }
 
     const items = searchResult.searchResult?.[0]?.item || [];
+    console.log(`Found ${items.length} items`);
+    
+    if (items.length === 0) {
+      console.log('No items found, but API call was successful');
+    }
     
     // Transform the data into our format
     const listings = items.map(item => {
@@ -75,7 +96,7 @@ export default async function handler(req, res) {
       };
     });
 
-    console.log(`Scraped ${listings.length} listings`);
+    console.log(`Processed ${listings.length} listings`);
 
     // Save to Cloudinary as a JSON file
     const jsonData = {
@@ -84,6 +105,8 @@ export default async function handler(req, res) {
       listings: listings
     };
 
+    console.log('Uploading to Cloudinary...');
+    
     // Upload JSON to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(
       `data:application/json;base64,${Buffer.from(JSON.stringify(jsonData)).toString('base64')}`,
