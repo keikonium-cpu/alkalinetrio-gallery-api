@@ -38,11 +38,15 @@ export default async function handler(req, res) {
 
     const response = await fetch(searchUrl.toString());
     
+    const responseText = await response.text();
+    console.log('eBay API Response Status:', response.status);
+    console.log('eBay API Response:', responseText);
+    
     if (!response.ok) {
-      throw new Error(`eBay API returned ${response.status}`);
+      throw new Error(`eBay API returned ${response.status}: ${responseText.substring(0, 200)}`);
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     const searchResult = data.findCompletedItemsResponse?.[0];
     
     if (!searchResult || searchResult.ack?.[0] !== 'Success') {
