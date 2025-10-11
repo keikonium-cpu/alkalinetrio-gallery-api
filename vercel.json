@@ -1,7 +1,6 @@
 {
   "functions": {
     "api/gallery.js": { "maxDuration": 10 },
-    "api/scrape-ebay.js": { "maxDuration": 10 },
     "api/listings.js": { "maxDuration": 10 }
   },
   "crons": [
