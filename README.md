@@ -1,2 +1,2 @@
 # alkalinetrio-gallery-api
-A repo to fetch screenshots of Alkaline Trio eBay sales
+A repo to post screenshots of sales
